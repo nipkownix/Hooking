@@ -50,7 +50,7 @@ void *Hook::RewriteHeader(BYTE *patch_address, DWORD dwPrevProtect, const char *
 {
 	if (!patch_address || !dwPrevProtect || !apiname || !hookproc || ByteNum < 5)
 	{
-		Logging::Log() << __FUNCTION__ " Error: Invalid input!";
+		spd::log()->info(__FUNCTION__ " Error: Invalid input!");
 		return nullptr;
 	}
 
@@ -60,7 +60,7 @@ void *Hook::RewriteHeader(BYTE *patch_address, DWORD dwPrevProtect, const char *
 	DWORD dwNull = 0;
 	if (!new_mem || !VirtualProtect(new_mem, mem_size, PAGE_EXECUTE_READWRITE, &dwNull))
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: access denied.  Cannot mark memory as executable api=%s at addr=%p err=%x", apiname, new_mem, GetLastError());
+		spd::log()->info(__FUNCTION__ " Error: access denied.  Cannot mark memory as executable api={} at addr={} err={}", apiname, (int)new_mem, GetLastError());
 
 		if (new_mem)
 		{
@@ -109,7 +109,7 @@ void *Hook::RewriteHeader(BYTE *patch_address, DWORD dwPrevProtect, const char *
 	// Flush cache
 	FlushInstructionCache(GetCurrentProcess(), patch_address, buff_size);
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p headersize=%d hook=%p", apiname, (patch_address + 5), ByteNum, hookproc);
+	spd::log()->info(__FUNCTION__ ": api={} addr={} headersize={} hook={}", apiname, (patch_address + 5), ByteNum, hookproc);
 #endif
 	return new_mem;
 }
@@ -122,20 +122,20 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 	void *orig_address;
 
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p hook=%p", apiname, apiproc, hookproc);
+	spd::log()->info(__FUNCTION__ ": api={} addr={} hook={}", apiname, apiproc, hookproc);
 #endif
 
 	// Check API address
 	if (!apiproc)
 	{
-		Logging::Log() << __FUNCTION__ << " Error: Failed to find '" << apiname << "' api";
+		spd::log()->info(__FUNCTION__ " Error: Failed to find '{}' api", apiname);
 		return nullptr;
 	}
 
 	// Check hook address
 	if (!hookproc)
 	{
-		Logging::Log() << __FUNCTION__ << " Error: Invalid hook address for '" << apiname << "'";
+		spd::log()->info(__FUNCTION__ " Error: Invalid hook address for '{}'", apiname);
 		return nullptr;
 	}
 
@@ -145,7 +145,7 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 	// Entry point could be at the top of a page? so VirtualProtect first to make sure patch_address is readable
 	if (!VirtualProtect(patch_address, buff_size, PAGE_EXECUTE_WRITECOPY, &dwPrevProtect))
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: access denied.  Cannot hook api=%s at addr=%p err=%x", apiname, apiproc, GetLastError());
+		spd::log()->info(__FUNCTION__ " Error: access denied.  Cannot hook api={} at addr={} err={}", apiname, apiproc, GetLastError());
 		return nullptr; // access denied
 	}
 
@@ -179,7 +179,7 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 		// Flush cache
 		FlushInstructionCache(GetCurrentProcess(), patch_address, buff_size);
 #ifdef _DEBUG
-		Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p->%p hook=%p", apiname, apiproc, orig_address, hookproc);
+		spd::log()->info(__FUNCTION__ ": api={} addr={}->{} hook={}", apiname, apiproc, orig_address, hookproc);
 #endif
 		return orig_address;
 	}
@@ -222,7 +222,7 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 		VirtualProtect(patch_address, buff_size, dwPrevProtect, &dwPrevProtect);
 
 #ifdef _DEBUG
-		Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p->%p hook=%p", apiname, apiproc, orig_address, hookproc);
+		spd::log()->info(__FUNCTION__ ": api={} addr={}->{} hook={}", apiname, apiproc, orig_address, hookproc);
 #endif
 
 		return HotPatch((void*)(*patchAddr), apiname, hookproc);
@@ -238,12 +238,12 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 		if ((*patch_address == 0xE9) && (*(WORD *)apiproc == 0xF9EB))
 		{
 			// should never go through here ...
-			Logging::LogFormat(__FUNCTION__ " Error: '%s' patched already at addr=%p", apiname, apiproc);
+			spd::log()->info(__FUNCTION__ " Error: '{}' patched already at addr={}", apiname, apiproc);
 			return (void *)1;
 		}
 		else
 		{
-			Logging::LogFormat(__FUNCTION__ " Error: '%s' is not patch aware at addr=%p", apiname, apiproc);
+			spd::log()->info(__FUNCTION__ " Error: '{}' is not patch aware at addr={}", apiname, apiproc);
 
 			// Log memory
 			BYTE lpBuffer[buff_size];
@@ -258,7 +258,7 @@ void *Hook::HotPatch(void *apiproc, const char *apiname, void *hookproc, bool fo
 					sprintf_s(tmpbuffer, "\\x%02X", lpBuffer[x]);
 					strcat_s(buffer, size, tmpbuffer);
 				}
-				Logging::LogFormat(buffer);
+				spd::log()->info(buffer);
 			}
 
 			return nullptr; // not hot patch "aware"
@@ -290,14 +290,14 @@ bool Hook::UnHotPatchAll()
 				{
 					// Memory different than expected
 					flag = false;
-					Logging::LogFormat(__FUNCTION__ " Error: Memory different than expected procaddr: %p", HotPatchProcs.back().procaddr);
+					spd::log()->info(__FUNCTION__ " Error: Memory different than expected procaddr: {}", HotPatchProcs.back().procaddr);
 				}
 			}
 			else
 			{
 				// Failed to read memory
 				flag = false;
-				Logging::LogFormat(__FUNCTION__ " Error: Failed to read memory procaddr: %p", HotPatchProcs.back().procaddr);
+				spd::log()->info(__FUNCTION__ " Error: Failed to read memory procaddr: {}", HotPatchProcs.back().procaddr);
 			}
 
 			// Restore protection
@@ -310,7 +310,7 @@ bool Hook::UnHotPatchAll()
 		{
 			// Access denied
 			flag = false;
-			Logging::LogFormat(__FUNCTION__ " Error: access denied. procaddr: %p", HotPatchProcs.back().procaddr);
+			spd::log()->info(__FUNCTION__ " Error: access denied. procaddr: {}", HotPatchProcs.back().procaddr);
 		}
 		// Free VirtualAlloc memory
 		if (HotPatchProcs.back().alocmemaddr)
@@ -331,7 +331,7 @@ bool Hook::UnhookHotPatch(void *apiproc, const char *apiname, void *hookproc)
 	void *orig_address;
 
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p hook=%p", apiname, apiproc, hookproc);
+	spd::log()->info(__FUNCTION__ ": api={} addr={} hook={}", apiname, apiproc, hookproc);
 #endif
 
 	patch_address = ((BYTE *)apiproc) - 5;
@@ -390,7 +390,7 @@ bool Hook::UnhookHotPatch(void *apiproc, const char *apiname, void *hookproc)
 	// Entry point could be at the top of a page? so VirtualProtect first to make sure patch_address is readable
 	if (!VirtualProtect(patch_address, buff_size, PAGE_EXECUTE_WRITECOPY, &dwPrevProtect))
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: access denied.  Cannot hook api=%s at addr=%p err=%x", apiname, apiproc, GetLastError());
+		spd::log()->info(__FUNCTION__ " Error: access denied.  Cannot hook api={} at addr={} err={}", apiname, apiproc, GetLastError());
 		return false; // access denied
 	}
 
@@ -408,17 +408,17 @@ bool Hook::UnhookHotPatch(void *apiproc, const char *apiname, void *hookproc)
 		// Flush cache
 		FlushInstructionCache(GetCurrentProcess(), patch_address, buff_size);
 #ifdef _DEBUG
-		Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p->%p hook=%p", apiname, apiproc, orig_address, hookproc);
+		spd::log()->info(__FUNCTION__ ": api={} addr={}->{} hook={}", apiname, apiproc, orig_address, hookproc);
 #endif
 		return true;
 	}
 
-	Logging::LogFormat(__FUNCTION__ " Error: failed to unhook '%s' at addr=%p", apiname, apiproc);
+	spd::log()->info(__FUNCTION__ " Error: failed to unhook '{}' at addr={}", apiname, apiproc);
 
 	// Restore protection
 	VirtualProtect(patch_address, buff_size, dwPrevProtect, &dwPrevProtect);
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": api=%s addr=%p->%p hook=%p", apiname, apiproc, orig_address, hookproc);
+	spd::log()->info(__FUNCTION__ ": api={} addr={}->{} hook={}", apiname, apiproc, orig_address, hookproc);
 #endif
 	return false;
 }

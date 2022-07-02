@@ -5,7 +5,7 @@
 #endif
 
 #include <windows.h>
-#include "Logging\Logging.h"
+#include <log.h>
 
 namespace Hook
 {

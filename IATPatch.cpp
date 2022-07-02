@@ -72,40 +72,40 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 	// Check if dll name is blank
 	if (!dll)
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: NULL dll name");
+		spd::log()->info(__FUNCTION__ " Error: NULL dll name");
 		return nullptr;
 	}
 
 	// Check if API name is blank
 	if (!apiname)
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: NULL api name");
+		spd::log()->info(__FUNCTION__ " Error: NULL api name");
 		return nullptr;
 	}
 
 	// Check module addresses
 	if (!module)
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: NULL api module address for '%s'", apiname);
+		spd::log()->info(__FUNCTION__ " Error: NULL api module address for '{}'", apiname);
 		return nullptr;
 	}
 
 	// Check API address
 	if (!apiproc)
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: Failed to find '%s' api", apiname);
+		spd::log()->info(__FUNCTION__ " Error: Failed to find '{}' api", apiname);
 		return nullptr;
 	}
 
 	// Check hook address
 	if (!hookproc)
 	{
-		Logging::LogFormat(__FUNCTION__ " Error: Invalid hook address for '%s'", apiname);
+		spd::log()->info(__FUNCTION__ " Error: Invalid hook address for '{}'", apiname);
 		return nullptr;
 	}
 
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": module=%p ordinal=%x name=%s dll=%s", module, ordinal, apiname, dll);	
+	spd::log()->info(__FUNCTION__ ": module={0} ordinal={1} name={2} dll={3}", module, ordinal, apiname, dll);	
 #endif
 
 	base = (DWORD)module;
@@ -116,13 +116,13 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 		pnth = PIMAGE_NT_HEADERS(PBYTE(base) + PIMAGE_DOS_HEADER(base)->e_lfanew);
 		if (!pnth)
 		{
-			Logging::LogFormat(__FUNCTION__ ": ERROR no PNTH at %d", __LINE__);
+			spd::log()->info(__FUNCTION__ ": ERROR no PNTH at {}", __LINE__);
 			return nullptr;
 		}
 		rva = pnth->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 		if (!rva)
 		{
-			Logging::LogFormat(__FUNCTION__ ": ERROR no RVA at %d", __LINE__);
+			spd::log()->info(__FUNCTION__ ": ERROR no RVA at {}", __LINE__);
 			return nullptr;
 		}
 		pidesc = (PIMAGE_IMPORT_DESCRIPTOR)(base + rva);
@@ -131,7 +131,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 		{
 			impmodule = (PSTR)(base + pidesc->Name);
 #ifdef _DEBUG
-			//Logging::LogFormat(__FUNCTION__ ": analyze impmodule=%s", impmodule);
+			//spd::log()->info(__FUNCTION__ ": analyze impmodule={}", impmodule);
 #endif
 			char *fname = impmodule;
 			for (; *fname; fname++); for (; !*fname; fname++);
@@ -139,7 +139,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 			if (!lstrcmpiA(dll, impmodule))
 			{
 #ifdef _DEBUG
-				Logging::LogFormat(__FUNCTION__ ": dll=%s found at %p", dll, impmodule);				
+				spd::log()->info(__FUNCTION__ ": dll={0} found at {1}", dll, impmodule);				
 #endif
 
 				ptaddr = (PIMAGE_THUNK_DATA)(base + (DWORD)pidesc->FirstThunk);
@@ -148,7 +148,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 				while (ptaddr->u1.Function)
 				{
 #ifdef _DEBUG
-					//Logging::LogFormat(__FUNCTION__ ": address=%x ptname=%x", ptaddr->u1.AddressOfData, ptname);
+					//spd::log()->info(__FUNCTION__ ": address={0} ptname={1}", ptaddr->u1.AddressOfData, ptname);
 #endif
 
 					if (ptname)
@@ -158,7 +158,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 						{
 							piname = (PIMAGE_IMPORT_BY_NAME)(base + (DWORD)ptname->u1.AddressOfData);
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": BYNAME ordinal=%x address=%x name=%s hint=%x", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, (char *)piname->Name, piname->Hint);							
+							spd::log()->info(__FUNCTION__ ": BYNAME ordinal={0} address={1} name={2} hint={3}", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, (char *)piname->Name, piname->Hint);							
 #endif
 							if (!lstrcmpiA(apiname, (char *)piname->Name))
 							{
@@ -168,14 +168,14 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 						else
 						{
 #ifdef _DEBUG
-							//Logging::LogFormat(__FUNCTION__ ": BYORD target=%x ord=%x", ordinal, IMAGE_ORDINAL32(ptname->u1.Ordinal));
+							//spd::log()->info(__FUNCTION__ ": BYORD target={0} ord={1}", ordinal, IMAGE_ORDINAL32(ptname->u1.Ordinal));
 #endif
 							// skip unknow ordinal 0
 							if (ordinal && (IMAGE_ORDINAL32(ptname->u1.Ordinal) == ordinal))
 							{
 #ifdef _DEBUG
-								Logging::LogFormat(__FUNCTION__ ": BYORD ordinal=%x addr=%x", ptname->u1.Ordinal, ptaddr->u1.Function);
-								//Logging::LogFormat(__FUNCTION__ ": BYORD GetProcAddress=%x", GetProcAddress(GetModuleHandle(dll), MAKEINTRESOURCE(IMAGE_ORDINAL32(ptname->u1.Ordinal))));									
+								spd::log()->info(__FUNCTION__ ": BYORD ordinal={0} addr={1}", ptname->u1.Ordinal, ptaddr->u1.Function);
+								//spd::log()->info(__FUNCTION__ ": BYORD GetProcAddress={0}", GetProcAddress(GetModuleHandle(dll), MAKEINTRESOURCE(IMAGE_ORDINAL32(ptname->u1.Ordinal))));									
 #endif
 								break;
 							}
@@ -185,13 +185,13 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 					else
 					{
 #ifdef _DEBUG
-						//Logging::LogFormat(__FUNCTION__ ": fname=%s", fname);
+						//spd::log()->info(__FUNCTION__ ": fname={}", fname);
 						//LogText(buffer);
 #endif
 						if (!lstrcmpiA(apiname, fname))
 						{
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": BYSCAN ordinal=%x address=%x name=%s", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, fname);							
+							spd::log()->info(__FUNCTION__ ": BYSCAN ordinal={0} address={1} name={2}", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, fname);							
 #endif
 							break;
 						}
@@ -218,7 +218,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 					if (!VirtualProtect(&ptaddr->u1.Function, 4, PAGE_EXECUTE_READWRITE, &oldprotect))
 					{
 #ifdef _DEBUG
-						Logging::LogFormat(__FUNCTION__ ": VirtualProtect error %d at %d", GetLastError(), __LINE__);						
+						spd::log()->info(__FUNCTION__ ": VirtualProtect error {0} at {1}", GetLastError(), __LINE__);						
 #endif
 						return nullptr;
 					}
@@ -226,19 +226,19 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 					if (!VirtualProtect(&ptaddr->u1.Function, 4, oldprotect, &oldprotect))
 					{
 #ifdef _DEBUG
-						Logging::LogFormat(__FUNCTION__ ": VirtualProtect error %d at %d", GetLastError(), __LINE__);						
+						spd::log()->info(__FUNCTION__ ": VirtualProtect error {} at {}", GetLastError(), __LINE__);						
 #endif
 						return nullptr;
 					}
 					if (!FlushInstructionCache(GetCurrentProcess(), &ptaddr->u1.Function, 4))
 					{
 #ifdef _DEBUG
-						Logging::LogFormat(__FUNCTION__ ": FlushInstructionCache error %d at %d", GetLastError(), __LINE__);						
+						spd::log()->info(__FUNCTION__ ": FlushInstructionCache error {} at {}", GetLastError(), __LINE__);						
 #endif
 						return nullptr;
 					}
 #ifdef _DEBUG
-					Logging::LogFormat(__FUNCTION__ " hook=%s address=%p->%p", apiname, org, hookproc);					
+					spd::log()->info(__FUNCTION__ " hook={} address={}->{}", apiname, org, hookproc);					
 #endif
 					// Record hook
 					StoreIATRecord(module, ordinal, dll, apiproc, apiname, hookproc);
@@ -252,7 +252,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 		if (!pidesc->FirstThunk)
 		{
 #ifdef _DEBUG
-			Logging::LogFormat(__FUNCTION__ ": PE unreferenced function %s:%s", dll, apiname);			
+			spd::log()->info(__FUNCTION__ ": PE unreferenced function {}:{}", dll, apiname);			
 #endif
 			return nullptr;
 		}
@@ -260,7 +260,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
-		Logging::LogFormat(__FUNCTION__ "Ex: EXCEPTION hook=%s:%s Hook Failed.", dll, apiname);
+		spd::log()->info(__FUNCTION__ "Ex: EXCEPTION hook={}:{} Hook Failed.", dll, apiname);
 	}
 	return org;
 }
@@ -275,7 +275,7 @@ bool Hook::UnIATPatchAll()
 		{
 			// Failed to restore address
 			flag = false;
-			Logging::LogFormat(__FUNCTION__ ": failed to restore address. procaddr: %p", IATPatchProcs.back().apiproc);
+			spd::log()->info(__FUNCTION__ ": failed to restore address. procaddr: {}", IATPatchProcs.back().apiproc);
 		}
 		IATPatchProcs.pop_back();
 	}
@@ -297,7 +297,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 	void *org;
 
 #ifdef _DEBUG
-	Logging::LogFormat(__FUNCTION__ ": module=%p ordinal=%x name=%s dll=%s", module, ordinal, apiname, dll);	
+	spd::log()->info(__FUNCTION__ ": module={} ordinal={} name={} dll={}", module, ordinal, apiname, dll);	
 #endif
 
 	base = (DWORD)module;
@@ -308,13 +308,13 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 		pnth = PIMAGE_NT_HEADERS(PBYTE(base) + PIMAGE_DOS_HEADER(base)->e_lfanew);
 		if (!pnth)
 		{
-			Logging::LogFormat(__FUNCTION__ ": ERROR no PNTH at %d", __LINE__);
+			spd::log()->info(__FUNCTION__ ": ERROR no PNTH at {}", __LINE__);
 			return false;
 		}
 		rva = pnth->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
 		if (!rva)
 		{
-			Logging::LogFormat(__FUNCTION__ ": ERROR no RVA at %d", __LINE__);
+			spd::log()->info(__FUNCTION__ ": ERROR no RVA at {}", __LINE__);
 			return false;
 		}
 		pidesc = (PIMAGE_IMPORT_DESCRIPTOR)(base + rva);
@@ -323,7 +323,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 		{
 			impmodule = (PSTR)(base + pidesc->Name);
 #ifdef _DEBUG
-			//Logging::LogFormat(__FUNCTION__ ": analyze impmodule=%s", impmodule);
+			//spd::log()->info(__FUNCTION__ ": analyze impmodule={}", impmodule);
 #endif
 			char *fname = impmodule;
 			for (; *fname; fname++); for (; !*fname; fname++);
@@ -331,7 +331,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 			if (!lstrcmpiA(dll, impmodule))
 			{
 #ifdef _DEBUG
-				Logging::LogFormat(__FUNCTION__ ": dll=%s found at %p", dll, impmodule);				
+				spd::log()->info(__FUNCTION__ ": dll={} found at {}", dll, impmodule);				
 #endif
 
 				ptaddr = (PIMAGE_THUNK_DATA)(base + (DWORD)pidesc->FirstThunk);
@@ -340,7 +340,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 				while (ptaddr->u1.Function)
 				{
 #ifdef _DEBUG
-					//Logging::LogFormat(__FUNCTION__ ": address=%x ptname=%x", ptaddr->u1.AddressOfData, ptname);
+					//spd::log()->info(__FUNCTION__ ": address={} ptname={}", ptaddr->u1.AddressOfData, ptname);
 #endif
 
 					if (ptname)
@@ -350,7 +350,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 						{
 							piname = (PIMAGE_IMPORT_BY_NAME)(base + (DWORD)ptname->u1.AddressOfData);
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": BYNAME ordinal=%x address=%x name=%s hint=%x", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, (char *)piname->Name, piname->Hint);							
+							spd::log()->info(__FUNCTION__ ": BYNAME ordinal={} address={} name={} hint={}", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, (char *)piname->Name, piname->Hint);							
 #endif
 							if (!lstrcmpiA(apiname, (char *)piname->Name))
 							{
@@ -360,14 +360,14 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 						else
 						{
 #ifdef _DEBUG
-							//Logging::LogFormat(__FUNCTION__ ": BYORD target=%x ord=%x", ordinal, IMAGE_ORDINAL32(ptname->u1.Ordinal));
+							//spd::log()->info(__FUNCTION__ ": BYORD target={} ord={}", ordinal, IMAGE_ORDINAL32(ptname->u1.Ordinal));
 #endif
 							// skip unknown ordinal 0
 							if (ordinal && (IMAGE_ORDINAL32(ptname->u1.Ordinal) == ordinal))
 							{
 #ifdef _DEBUG
-								Logging::LogFormat(__FUNCTION__ ": BYORD ordinal=%x addr=%x", ptname->u1.Ordinal, ptaddr->u1.Function);
-								//Logging::LogFormat(__FUNCTION__ ": BYORD GetProcAddress=%x", GetProcAddress(GetModuleHandle(dll), MAKEINTRESOURCE(IMAGE_ORDINAL32(ptname->u1.Ordinal))));									
+								spd::log()->info(__FUNCTION__ ": BYORD ordinal={} addr={}", ptname->u1.Ordinal, ptaddr->u1.Function);
+								//spd::log()->info(__FUNCTION__ ": BYORD GetProcAddress={}", GetProcAddress(GetModuleHandle(dll), MAKEINTRESOURCE(IMAGE_ORDINAL32(ptname->u1.Ordinal))));									
 #endif
 								break;
 							}
@@ -377,12 +377,12 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 					else
 					{
 #ifdef _DEBUG
-						//Logging::LogFormat(__FUNCTION__ ": fname=%s", fname);
+						//spd::log()->info(__FUNCTION__ ": fname={}", fname);
 #endif
 						if (!lstrcmpiA(apiname, fname))
 						{
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": BYSCAN ordinal=%x address=%x name=%s", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, fname);							
+							spd::log()->info(__FUNCTION__ ": BYSCAN ordinal={} address={} name={}", ptaddr->u1.Ordinal, ptaddr->u1.AddressOfData, fname);							
 #endif
 							break;
 						}
@@ -412,7 +412,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 						if (!VirtualProtect(&ptaddr->u1.Function, 4, PAGE_EXECUTE_READWRITE, &oldprotect))
 						{
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": VirtualProtect error %d at %d", GetLastError(), __LINE__);							
+							spd::log()->info(__FUNCTION__ ": VirtualProtect error {} at {}", GetLastError(), __LINE__);							
 #endif
 							return false;
 						}
@@ -420,19 +420,19 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 						if (!VirtualProtect(&ptaddr->u1.Function, 4, oldprotect, &oldprotect))
 						{
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": VirtualProtect error %d at %d", GetLastError(), __LINE__);							
+							spd::log()->info(__FUNCTION__ ": VirtualProtect error {} at {}", GetLastError(), __LINE__);							
 #endif
 							return false;
 						}
 						if (!FlushInstructionCache(GetCurrentProcess(), &ptaddr->u1.Function, 4))
 						{
 #ifdef _DEBUG
-							Logging::LogFormat(__FUNCTION__ ": FlushInstructionCache error %d at %d", GetLastError(), __LINE__);							
+							spd::log()->info(__FUNCTION__ ": FlushInstructionCache error {} at {}", GetLastError(), __LINE__);							
 #endif
 							return false;
 						}
 #ifdef _DEBUG
-						Logging::LogFormat(__FUNCTION__ " hook=%s address=%p->%p", apiname, org, hookproc);						
+						spd::log()->info(__FUNCTION__ " hook={} address={}->{}", apiname, org, hookproc);						
 #endif
 
 						return true;
@@ -445,7 +445,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 		if (!pidesc->FirstThunk)
 		{
 #ifdef _DEBUG
-			Logging::LogFormat(__FUNCTION__ ": PE unreferenced function %s:%s", dll, apiname);			
+			spd::log()->info(__FUNCTION__ ": PE unreferenced function {}:{}", dll, apiname);			
 #endif
 			return false;
 		}
@@ -453,7 +453,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER)
 	{
-		Logging::LogFormat(__FUNCTION__ "Ex: EXCEPTION hook=%s:%s Hook Failed.", dll, apiname);
+		spd::log()->info(__FUNCTION__ "Ex: EXCEPTION hook={}:{} Hook Failed.", dll, apiname);
 	}
 	return false;
 }
