@@ -33,7 +33,7 @@
 void *Hook::HookAPI(HMODULE module, const char *dll, void *apiproc, const char *apiname, void *hookproc)
 {
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": module=" << module << " dll=" << dll << " apiproc=" << apiproc << " apiname={} hookproc=" << hookproc;
+	spd::log()->info(__FUNCTION__ ": module = {0} dll = {1} apiproc = {2} apiname = {3} hookproc = {4}", static_cast<void*>(module), dll, apiproc, hookproc);
 #endif
 
 	// Check if API name is blank
@@ -94,7 +94,7 @@ void *Hook::HookAPI(HMODULE module, const char *dll, void *apiproc, const char *
 void Hook::UnhookAPI(HMODULE module, const char *dll, void *apiproc, const char *apiname, void *hookproc)
 {
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": module=" << module << " dll=" << dll << " apiproc=" << apiproc << " apiname={} hookproc=" << hookproc;
+	spd::log()->info(__FUNCTION__ ": module = {0} dll = {1} apiproc = {2} apiname = {3} hookproc = {4}", static_cast<void*>(module), dll, apiproc, hookproc);
 #endif
 
 	// Check if API name is blank
@@ -229,7 +229,7 @@ HMODULE Hook::GetModuleHandle(char* ProcName)
 	}
 
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": Searching for " << ProcName << ".";
+	spd::log()->info(__FUNCTION__ ": Searching for \"{}\".", ProcName);
 #endif
 
 	// Get a handle to the process.

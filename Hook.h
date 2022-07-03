@@ -6,6 +6,7 @@
 
 #include <windows.h>
 #include <log.h>
+#include "..\dllmain\Utils.h"
 
 namespace Hook
 {

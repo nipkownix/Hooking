@@ -105,7 +105,7 @@ void *Hook::IATPatch(HMODULE module, DWORD ordinal, const char *dll, void *apipr
 	}
 
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": module={0} ordinal={1} name={2} dll={3}", module, ordinal, apiname, dll);	
+	spd::log()->info(__FUNCTION__ ": module={0} ordinal={1} name={2} dll={3}", static_cast<void*>(module), ordinal, *apiname, *dll);
 #endif
 
 	base = (DWORD)module;
@@ -297,7 +297,7 @@ bool Hook::UnhookIATPatch(HMODULE module, DWORD ordinal, const char *dll, void *
 	void *org;
 
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": module={} ordinal={} name={} dll={}", module, ordinal, apiname, dll);	
+	spd::log()->info(__FUNCTION__ ": module={} ordinal={} name={} dll={}", static_cast<void*>(module), ordinal, apiname, dll);
 #endif
 
 	base = (DWORD)module;

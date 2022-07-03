@@ -109,7 +109,7 @@ void *Hook::RewriteHeader(BYTE *patch_address, DWORD dwPrevProtect, const char *
 	// Flush cache
 	FlushInstructionCache(GetCurrentProcess(), patch_address, buff_size);
 #ifdef _DEBUG
-	spd::log()->info(__FUNCTION__ ": api={} addr={} headersize={} hook={}", apiname, (patch_address + 5), ByteNum, hookproc);
+	spd::log()->info(__FUNCTION__ ": api={} addr={} headersize={} hook={}", apiname, IntToHexStr(patch_address + 5), ByteNum, hookproc);
 #endif
 	return new_mem;
 }
